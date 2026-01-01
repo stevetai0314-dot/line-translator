@@ -19,12 +19,10 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-slate-50">
   <div id="root"></div>
-  <!-- 使用相對路徑，讓 Vite 自動處理編譯 -->
-  <script type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+  <!-- Vite 入口腳本：確保使用絕對路徑指向 index.tsx -->
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
