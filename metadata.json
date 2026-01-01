@@ -1,0 +1,5 @@
+{
+  "name": "中越即時翻譯通 (LIFF)",
+  "description": "這是一個專為 LINE 群組設計的 LIFF 應用程式，讓越南與台灣同事能快速互傳中越文翻譯。使用者輸入文字後，透過 Gemini 進行高品質翻譯，並直接以使用者身份將結果傳回聊天室。",
+  "requestFramePermissions": []
+}
