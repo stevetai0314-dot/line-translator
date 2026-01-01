@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { translateText } from './services/geminiService';
@@ -18,12 +17,11 @@ const App: React.FC = () => {
   useEffect(() => {
     const initLiff = async () => {
       try {
-        console.log("Checking window.liff...");
+        console.log("LIFF Initialization started...");
         if (!window.liff) {
-          throw new Error("LINE SDK (liff.js) 尚未載入");
+          throw new Error("LINE SDK (liff.js) 尚未載入，請確認 index.html 中的 script 標籤");
         }
 
-        console.log("Initializing LIFF with ID:", LIFF_ID);
         await window.liff.init({ liffId: LIFF_ID });
         setIsLiffInitialized(true);
         console.log("LIFF Initialization successful");
@@ -34,21 +32,18 @@ const App: React.FC = () => {
           setStatus(AppStatus.READY);
         }
       } catch (err: any) {
-        console.error('LIFF Error:', err);
+        console.error('LIFF Error detail:', err);
         setError(`初始化失敗: ${err.message || '未知錯誤'}`);
         setStatus(AppStatus.ERROR);
       }
     };
 
-    // 輪詢直到 liff sdk 載入
-    const checkLiff = setInterval(() => {
-      if (window.liff) {
-        clearInterval(checkLiff);
-        initLiff();
-      }
-    }, 100);
+    // 延遲執行確保 SDK 已經注入
+    const timer = setTimeout(() => {
+      initLiff();
+    }, 500);
 
-    return () => clearInterval(checkLiff);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleTranslate = async () => {
@@ -56,8 +51,8 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      if (!process.env.API_KEY) {
-        throw new Error("Gemini API Key 尚未設定");
+      if (!process.env.API_KEY || process.env.API_KEY === "undefined") {
+        throw new Error("API Key 未設定。請在 GitHub Secrets 設定 API_KEY 變數。");
       }
       const res = await translateText(inputText);
       setResult(res);
@@ -83,10 +78,11 @@ const App: React.FC = () => {
         await window.liff.sendMessages([{ type: 'text', text: formatMessage() }]);
         window.liff.closeWindow();
       } else {
-        setError('請在 LINE 內部開啟以使用傳送功能');
+        setError('「直接傳送」僅能在 LINE App 內部使用。請複製文字後手動貼上。');
       }
     } catch (err: any) {
-      setError('傳送失敗，請確認是否開啟訊息傳送權限');
+      console.error('Send message error:', err);
+      setError('傳送失敗！請確認 LINE Developer 後台已開啟 chat_message.write 權限。');
     }
   };
 
@@ -101,26 +97,10 @@ const App: React.FC = () => {
   if (status === AppStatus.INITIALIZING) {
     return (
       <Layout>
-        <div className="flex flex-col items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-emerald-100 border-t-emerald-600"></div>
-          <p className="mt-4 text-slate-500 font-medium">系統載入中，請稍候...</p>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (status === AppStatus.ERROR) {
-    return (
-      <Layout>
-        <div className="p-6 bg-red-50 rounded-2xl border border-red-100 text-red-700">
-          <h2 className="font-bold mb-2">啟動失敗</h2>
-          <p className="text-sm">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg text-sm"
-          >
-            重試
-          </button>
+        <div className="flex flex-col items-center justify-center h-64 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-100 border-t-emerald-600 mb-4"></div>
+          <p className="text-slate-500 font-medium">系統正在載入...</p>
+          <p className="text-[10px] text-slate-300 mt-2 italic">Connecting to LIFF: {LIFF_ID}</p>
         </div>
       </Layout>
     );
@@ -129,9 +109,10 @@ const App: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        {status === AppStatus.OUTSIDE_LINE && (
-          <div className="bg-amber-50 border border-amber-100 text-amber-700 p-3 rounded-xl text-[10px] text-center italic">
-            偵測到非 LINE 環境。翻譯功能可用，但「直接傳送」功能僅支援 LINE 內部。
+        {error && (
+          <div className="p-4 bg-rose-50 border-2 border-rose-100 rounded-2xl text-rose-700 text-sm">
+            <p className="font-bold">⚠️ 提示</p>
+            <p>{error}</p>
           </div>
         )}
 
@@ -147,11 +128,11 @@ const App: React.FC = () => {
             disabled={loading || !inputText.trim()}
             className={`w-full mt-4 py-4 rounded-2xl font-black text-white transition-all shadow-xl ${
               loading || !inputText.trim() 
-                ? 'bg-slate-200' 
+                ? 'bg-slate-200 cursor-not-allowed' 
                 : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98]'
             }`}
           >
-            {loading ? '🦾 翻譯中...' : '🌟 立即翻譯'}
+            {loading ? '🦾 正在翻譯...' : '🌟 立即翻譯'}
           </button>
         </section>
 
@@ -159,29 +140,34 @@ const App: React.FC = () => {
           <section className="bg-white border-2 border-slate-50 rounded-[2.5rem] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
             <div className="space-y-5">
               <div>
-                <span className="text-[10px] font-black text-slate-300 uppercase ml-1">原文 ({result.sourceLang})</span>
-                <div className="bg-slate-50 p-4 rounded-2xl text-slate-500 border border-slate-100 mt-1">{result.original}</div>
+                <span className="text-[10px] font-black text-slate-300 uppercase ml-1">原文 ({result.sourceLang === 'vi' ? '🇻🇳 越文' : '🇹🇼 中文'})</span>
+                <div className="bg-slate-50 p-4 rounded-2xl text-slate-500 border border-slate-100 mt-1 leading-relaxed">{result.original}</div>
               </div>
               <div>
-                <span className="text-[10px] font-black text-emerald-400 uppercase ml-1">翻譯 ({result.targetLang})</span>
-                <div className="bg-emerald-50 p-5 rounded-2xl text-emerald-900 font-bold border border-emerald-100 text-xl mt-1">{result.translated}</div>
+                <span className="text-[10px] font-black text-emerald-400 uppercase ml-1">翻譯 ({result.targetLang === 'vi' ? '🇻🇳 越文' : '🇹🇼 中文'})</span>
+                <div className="bg-emerald-50 p-5 rounded-2xl text-emerald-900 font-bold border border-emerald-100 text-xl mt-1 leading-relaxed">{result.translated}</div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-8">
-              <button onClick={handleCopy} className="py-4 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all">
-                {copied ? '✅ 已複製' : '📋 複製'}
+              <button 
+                onClick={handleCopy} 
+                className="py-4 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all active:bg-slate-300"
+              >
+                {copied ? '✅ 已複製' : '📋 複製結果'}
               </button>
               <button
                 onClick={handleSendToLine}
-                disabled={status === AppStatus.OUTSIDE_LINE}
-                className={`py-4 rounded-2xl font-black text-white shadow-lg flex items-center justify-center gap-2 ${
-                  status === AppStatus.OUTSIDE_LINE ? 'bg-slate-300' : 'bg-sky-500 hover:bg-sky-600'
+                className={`py-4 rounded-2xl font-black text-white shadow-lg flex items-center justify-center gap-2 transition-all ${
+                  status === AppStatus.OUTSIDE_LINE ? 'bg-slate-300' : 'bg-sky-500 hover:bg-sky-600 active:scale-95'
                 }`}
               >
-                傳送至 LINE
+                直接傳送
               </button>
             </div>
+            {status === AppStatus.OUTSIDE_LINE && (
+              <p className="text-[10px] text-slate-400 mt-3 text-center italic">※ 請在 LINE 內開啟連結以獲得完整體驗</p>
+            )}
           </section>
         )}
       </div>
