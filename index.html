@@ -22,7 +22,7 @@
 </head>
 <body class="bg-slate-50">
   <div id="root"></div>
-  <!-- 修正路徑：移除開頭斜線，讓 Vite 自動處理路徑 -->
-  <script type="module" src="index.tsx"></script>
+  <!-- 指向入口檔案，Vite 在 Build 時會自動將其替換為編譯後的 JS -->
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>
