@@ -18,11 +18,10 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body class="bg-slate-50">
   <div id="root"></div>
-  <!-- Vite 入口腳本 -->
-  <script type="module" src="/index.tsx"></script>
+  <!-- 移除路徑開頭的斜線，讓 Vite 根據 base 路徑正確抓取原始碼 -->
+  <script type="module" src="index.tsx"></script>
 </body>
 </html>
