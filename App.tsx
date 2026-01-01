@@ -4,7 +4,7 @@ import { Layout } from './components/Layout';
 import { translateText } from './services/geminiService';
 import { AppStatus, TranslationResult } from './types';
 
-// ⚠️ 重要：請在 LINE Developers 申請 LIFF ID 並填寫於此
+// 請確認這裡填的是你的 LIFF ID
 const LIFF_ID: string = '2008793706-VpD5hC7x'; 
 
 const App: React.FC = () => {
@@ -19,8 +19,10 @@ const App: React.FC = () => {
   useEffect(() => {
     const initLiff = async () => {
       try {
-        if (LIFF_ID === '2006764506-6JreQ2eB') {
-          throw new Error("目前使用的是預設範例 ID，請更換為您的 LIFF ID。");
+        if (!LIFF_ID || LIFF_ID === '2006764506-6JreQ2eB' && window.location.hostname !== 'localhost') {
+          setStatus(AppStatus.ERROR);
+          setError("請在 App.tsx 中設定正確的 LIFF ID");
+          return;
         }
 
         await window.liff.init({ liffId: LIFF_ID });
@@ -33,7 +35,7 @@ const App: React.FC = () => {
         }
       } catch (err: any) {
         console.error('LIFF init error', err);
-        setError(err.message || 'LIFF 初始化失敗');
+        setError(`LIFF 初始化失敗: ${err.message}`);
         setStatus(AppStatus.ERROR);
       }
     };
@@ -42,7 +44,7 @@ const App: React.FC = () => {
       initLiff();
     } else {
       setStatus(AppStatus.ERROR);
-      setError("無法載入 LINE SDK，請確認網路連線。");
+      setError("找不到 LINE SDK，請檢查網路連線");
     }
   }, []);
 
@@ -51,10 +53,14 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      // 檢查 API KEY 是否存在 (定義在 vite.config.ts)
+      if (!process.env.API_KEY) {
+        throw new Error("找不到 API_KEY，請確認 GitHub Secrets 設定");
+      }
       const res = await translateText(inputText);
       setResult(res);
     } catch (err: any) {
-      setError("翻譯失敗：" + (err.message || "未知錯誤"));
+      setError(err.message || "翻譯發生錯誤");
     } finally {
       setLoading(false);
     }
@@ -73,7 +79,8 @@ const App: React.FC = () => {
       await window.liff.sendMessages([{ type: 'text', text: formatMessage() }]);
       window.liff.closeWindow();
     } catch (err: any) {
-      setError('發送失敗！請確認：1. 是否在 LINE 內開啟 2. 權限勾選 chat_message.write');
+      console.error('Send error', err);
+      setError('傳送失敗！請確認是在 LINE 聊天室內開啟，且已授權傳訊權限。');
     }
   };
 
@@ -89,7 +96,7 @@ const App: React.FC = () => {
       <Layout>
         <div className="flex flex-col items-center justify-center h-64">
           <div className="animate-spin rounded-full h-10 w-10 border-4 border-emerald-100 border-t-emerald-600"></div>
-          <p className="mt-4 text-slate-500 font-medium">翻譯系統啟動中...</p>
+          <p className="mt-4 text-slate-500 font-medium italic">系統啟動中...</p>
         </div>
       </Layout>
     );
@@ -98,80 +105,57 @@ const App: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        <section>
-          <div className="relative">
-            <textarea
-              className="w-full p-5 border-2 border-slate-100 rounded-[2rem] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none h-40 text-slate-800 text-lg shadow-sm"
-              placeholder="輸入中或越文..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-            />
-            {inputText && (
-              <button 
-                onClick={() => setInputText('')}
-                className="absolute top-4 right-4 text-slate-300 hover:text-slate-500"
-              >
-                ✕
-              </button>
-            )}
+        {error && (
+          <div className="bg-rose-50 border border-rose-100 text-rose-600 p-4 rounded-2xl text-xs">
+            <strong>發生錯誤：</strong> {error}
           </div>
+        )}
+
+        <section>
+          <textarea
+            className="w-full p-5 border-2 border-slate-100 rounded-[2rem] focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all resize-none h-40 text-slate-800 shadow-inner text-lg"
+            placeholder="請輸入越文或中文..."
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+          />
           <button
             onClick={handleTranslate}
             disabled={loading || !inputText.trim()}
-            className={`w-full mt-4 py-4 rounded-2xl font-black text-white transition-all shadow-lg ${
+            className={`w-full mt-4 py-4 rounded-2xl font-black text-white transition-all shadow-xl ${
               loading || !inputText.trim() 
-                ? 'bg-slate-200 cursor-not-allowed' 
-                : 'bg-emerald-600 hover:bg-emerald-700 active:scale-95'
+                ? 'bg-slate-200' 
+                : 'bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98]'
             }`}
           >
-            {loading ? '🦾 思考中...' : '🌟 開始翻譯'}
+            {loading ? '🦾 翻譯中...' : '🌟 立即翻譯'}
           </button>
         </section>
 
         {result && (
-          <section className="bg-white border-2 border-emerald-50 rounded-[2.5rem] p-6 shadow-xl animate-in slide-in-from-bottom-4 duration-500">
-            <div className="space-y-4">
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-600 text-sm">
-                {result.original}
+          <section className="bg-white border-2 border-slate-50 rounded-[2.5rem] p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="space-y-5">
+              <div>
+                <span className="text-[10px] font-black text-slate-300 uppercase ml-1">原文</span>
+                <div className="bg-slate-50 p-4 rounded-2xl text-slate-500 border border-slate-100 mt-1">{result.original}</div>
               </div>
-              <div className="bg-emerald-50 p-5 rounded-2xl text-emerald-900 font-bold border border-emerald-100 text-xl">
-                {result.translated}
+              <div>
+                <span className="text-[10px] font-black text-emerald-400 uppercase ml-1">翻譯</span>
+                <div className="bg-emerald-50 p-5 rounded-2xl text-emerald-900 font-bold border border-emerald-100 text-xl mt-1">{result.translated}</div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mt-6">
-              <button
-                onClick={handleCopy}
-                className="py-4 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-              >
+            <div className="grid grid-cols-2 gap-3 mt-8">
+              <button onClick={handleCopy} className="py-4 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all">
                 {copied ? '✅ 已複製' : '📋 複製'}
               </button>
-              
               <button
                 onClick={handleSendToLine}
-                className={`py-4 rounded-2xl font-black text-white flex items-center justify-center gap-2 transition-all shadow-md ${
-                  status === AppStatus.OUTSIDE_LINE
-                    ? 'bg-slate-300 cursor-not-allowed'
-                    : 'bg-sky-500 hover:bg-sky-600 active:scale-95'
-                }`}
+                className="py-4 rounded-2xl font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg flex items-center justify-center gap-2"
               >
-                傳送訊息
+                傳送
               </button>
             </div>
-            
-            {status === AppStatus.OUTSIDE_LINE && (
-              <p className="text-center text-[10px] text-rose-400 mt-4">
-                偵測到瀏覽器環境，請複製後手動貼上。
-              </p>
-            )}
           </section>
-        )}
-
-        {error && (
-          <div className="bg-rose-50 text-rose-600 text-xs p-5 rounded-3xl border-2 border-rose-100 shadow-sm leading-relaxed">
-            <p className="font-bold mb-1 underline">⚠️ 系統提示</p>
-            {error}
-          </div>
         )}
       </div>
     </Layout>
