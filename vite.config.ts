@@ -8,6 +8,7 @@ export default defineConfig({
     // 確保環境變數能被正確注入
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
   },
-  // 必須與您的 GitHub 倉庫名稱一致
+  // 重要：這裡的路徑必須與您的 GitHub 倉庫名稱完全一致
+  // 例如倉庫網址是 https://github.com/user/my-app，這裡就要寫 '/my-app/'
   base: '/line-translator/' 
 });
