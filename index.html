@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>中越翻譯助手</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- LIFF SDK -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script type="importmap">
 {
@@ -21,7 +22,7 @@
 </head>
 <body class="bg-slate-50">
   <div id="root"></div>
-  <!-- 移除路徑開頭的斜線，讓 Vite 根據 base 路徑正確抓取原始碼 -->
+  <!-- 修正路徑：移除開頭斜線，讓 Vite 自動處理路徑 -->
   <script type="module" src="index.tsx"></script>
 </body>
 </html>
