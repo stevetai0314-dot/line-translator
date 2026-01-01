@@ -5,7 +5,7 @@ import { translateText } from './services/geminiService';
 import { AppStatus, TranslationResult } from './types';
 
 // ⚠️ 重要：請在 LINE Developers 申請 LIFF ID 並填寫於此
-const LIFF_ID: string = '2006764506-6JreQ2eB'; 
+const LIFF_ID: string = '2008793706-VpD5hC7x'; 
 
 const App: React.FC = () => {
   const [status, setStatus] = useState<AppStatus>(AppStatus.INITIALIZING);
