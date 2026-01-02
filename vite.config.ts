@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // 確保程式碼中出現的 process.env.API_KEY 被替換為環境變數字串
+    // 確保 build 過程中 API_KEY 被正確注入
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
   },
-  // 這是您的 GitHub 倉庫路徑，請確認與倉庫名稱一致
-  base: '/line-translator/'
+  // 使用相對路徑，增加 GitHub Pages 部署的相容性
+  base: './'
 });

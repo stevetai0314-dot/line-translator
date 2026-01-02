@@ -1,11 +1,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { TranslationResult } from "../types";
 
-// Always use a named parameter for apiKey and obtain from process.env.API_KEY
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const translateText = async (text: string): Promise<TranslationResult> => {
-  // Use ai.models.generateContent to query GenAI with both the model name and contents
+  // 每次呼叫時建立實例，確保讀取到編譯時注入的 API_KEY
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY 未定義，請檢查 GitHub Secrets 設定。");
+  }
+  
+  const ai = new GoogleGenAI({ apiKey });
+
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Translate the following text between Vietnamese and Traditional Chinese. 
@@ -27,7 +31,6 @@ export const translateText = async (text: string): Promise<TranslationResult> =>
     }
   });
 
-  // Extracting Text Output: Access .text property (not a method)
   const jsonStr = response.text?.trim();
   
   if (!jsonStr) {
